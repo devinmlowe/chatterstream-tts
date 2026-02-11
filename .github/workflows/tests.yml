@@ -11,7 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        # 3.12+ fails: upstream chatterbox-tts pins numpy==1.25.2 which
+        # requires distutils (removed in 3.12)
+        python-version: ["3.10", "3.11"]
 
     steps:
       - uses: actions/checkout@v4

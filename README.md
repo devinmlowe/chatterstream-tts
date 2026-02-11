@@ -50,7 +50,7 @@ Text Input
 | `torch` | >=2.6.0 | Inference runtime |
 | `av` | >=12.0.0 | *Optional* — Opus/HLS media encoding |
 
-**Python**: >=3.10 (tested on 3.11; 3.13+ may have torch compatibility issues)
+**Python**: 3.10 or 3.11 (3.12+ fails due to upstream numpy/distutils incompatibility)
 
 **Hardware**: Runs on CPU, CUDA, or Apple Silicon (MPS).
 
