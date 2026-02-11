@@ -73,7 +73,21 @@ uv pip install -e ".[dev]"
 uv pip install -e ".[media]"
 ```
 
-## Usage
+## Quick Start
+
+```python
+from chatterstream import StreamingTTS
+
+tts = StreamingTTS()
+tts.load()  # loads model weights (~2-5s)
+
+async for chunk in tts.synthesize("Hello world"):
+    play(chunk.pcm_bytes)  # 24 kHz mono int16
+```
+
+That's it — three lines. The pipeline handles tokenization, chunked generation, vocoding, and audio post-processing internally. Each `AudioChunk` contains raw PCM bytes (24 kHz, mono, int16) plus metadata (`is_final`, `chunk_index`, `duration_ms`).
+
+## Advanced Usage
 
 ### Loading the model
 
@@ -82,13 +96,9 @@ Model weights (~600MB) must be loaded before synthesis. There are three ways to 
 **Explicit load** — Call `.load()` yourself before synthesizing. This is the recommended approach for servers and long-running processes. You control exactly when the 2-5 second load happens (e.g. at startup, not on the first user request), and `is_loaded` lets you gate readiness checks.
 
 ```python
-from chatterstream import StreamingTTS
-
 tts = StreamingTTS()
 tts.load()  # 2-5s, blocks until ready
-
-async for chunk in tts.synthesize("Hello world"):
-    play(chunk.pcm_bytes)  # 24 kHz mono int16
+# tts.is_loaded == True
 ```
 
 **Chained load** — `.load()` returns `self`, so you can construct and load in one line. Convenient for scripts and notebooks where you don't need the intermediate unloaded state.
@@ -148,15 +158,53 @@ tts.load()
 
 ### Media encoders
 
-The core pipeline yields raw PCM audio. Two optional encoders (requiring `pip install chatterstream-tts[media]`) handle delivery formats:
+The core pipeline yields raw PCM audio (24 kHz, mono, int16). To deliver that audio to clients, you need an encoding/transport layer. Two optional encoders (requiring `pip install chatterstream-tts[media]`) handle this:
 
 **OpusEncoder** — Encodes PCM to OGG/Opus. Best for low-latency delivery over WebSockets or direct streaming where you control both ends. Superior compression at low bitrates, near-zero codec delay. The tradeoff: browsers can't play a raw OGG/Opus stream over plain HTTP — you need JavaScript (e.g. Web Audio API) or a WebSocket to decode it client-side.
 
+```python
+from chatterstream.opus_encoder import OpusEncoder
+
+encoder = OpusEncoder(input_sample_rate=24000, bitrate=64000)
+
+async for chunk in tts.synthesize("Hello world"):
+    ogg_bytes = encoder.encode(chunk.pcm_bytes)
+    websocket.send(ogg_bytes)  # stream over WebSocket
+
+# Flush the encoder when done (emits final OGG pages)
+final_bytes = encoder.finalize()
+websocket.send(final_bytes)
+
+# Reset for the next utterance (reuses the encoder object)
+encoder.reset()
+```
+
 **HLSSegmenter** — Encodes PCM to MPEG-TS/AAC segments with an m3u8 playlist. HLS (HTTP Live Streaming) is the standard used by every browser, phone, and smart TV — a plain `<audio>` tag pointed at the m3u8 URL just works, no JavaScript required. Audio is split into small segments (~1-2s each) served over regular HTTP. The tradeoff: segment-based delivery adds inherent latency (the player must buffer at least one segment before playback starts).
 
-These are **complementary, not alternatives**. Use Opus for real-time applications (voice agents, WebSocket APIs) where you control the client. Use HLS when you need universal browser playback with zero client-side code.
+```python
+from chatterstream.hls_segmenter import HLSSegmenter
 
-The example server at `examples/streaming_server.py` uses HLS because it's the simplest way to test synthesis in any browser — just open the URL and hit play.
+segmenter = HLSSegmenter(sample_rate=24000, bitrate=96000)
+
+async for chunk in tts.synthesize("Hello world"):
+    seg_bytes = segmenter.add_segment(chunk.pcm_bytes)
+    # seg_bytes is a self-contained MPEG-TS segment
+    # serve it at /seg{index}.ts
+
+# Flush encoder and mark the stream complete
+segmenter.finalize()
+
+# Generate the m3u8 playlist (references seg0.ts, seg1.ts, ...)
+playlist = segmenter.playlist()
+# serve playlist at /stream.m3u8
+
+# Retrieve any segment by index
+segment_0 = segmenter.get_segment(0)
+```
+
+**These are complementary, not alternatives.** Use Opus for real-time applications (voice agents, WebSocket APIs) where you control the client. Use HLS when you need universal browser playback with zero client-side code. You could even use both — Opus for a native app client and HLS for a web fallback.
+
+See `examples/streaming_server.py` for a complete aiohttp server that uses HLS to serve audio playable in any browser.
 
 ## Running tests
 
