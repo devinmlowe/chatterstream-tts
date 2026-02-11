@@ -14,7 +14,7 @@ This is a **personal project** extracted from a Chatterbox fork. It wraps upstre
 Text Input
     │
     ▼
-╔══════════════════════════════════════════════════════════════╗
+╔═════════════════════════════════════════════════════════════╗
 ║  chatterstream-tts (streaming wrapper)                      ║
 ║                                                             ║
 ║  ┌──────────────┐                                           ║
@@ -49,7 +49,7 @@ Text Input
 ║    S3Gen      ─  Flow-matching vocoder + HiFiGAN (257M)     ║
 ║    VoiceEnc   ─  Speaker embedding extraction (LSTM)        ║
 ║                                                             ║
-╚══════════════════════════════════╤═══════════════════════════╝
+╚══════════════════════════════════╤══════════════════════════╝
                                    │
                                    ▼
                   AsyncIterator[AudioChunk]  →  24 kHz mono int16
