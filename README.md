@@ -14,32 +14,45 @@ This is a **personal project** extracted from a Chatterbox fork. It wraps upstre
 Text Input
     │
     ▼
-┌──────────────┐
-│TextProcessor │  Regex normalization + GPT-2 tokenization
-└──────┬───────┘
-       │
-       ▼
-┌──────────────────┐
-│ConditioningCache │  Cached voice embeddings (LRU, mtime-aware)
-└──────┬───────────┘
-       │
-       ▼
-┌──────────────┐
-│TokenGenerator│  T3 autoregressive decoding, yields token chunks
-└──────┬───────┘
-       │  adaptive chunking (25 tok first, 75 tok subsequent)
-       ▼
-┌─────────────┐
-│ChunkVocoder │  S3Gen causal decode (finalize=False until last)
-└──────┬──────┘
-       │  flow overlap handling + HiFiGAN source caching
-       ▼
-┌──────────────────┐
-│AudioPostProcessor│  Fade-in, normalization, PCM int16 conversion
-└──────┬───────────┘
-       │
-       ▼
-  AsyncIterator[AudioChunk]  →  24 kHz mono int16
+╔══════════════════════════════════════════════════════════════╗
+║  chatterstream-tts (streaming wrapper)                      ║
+║                                                             ║
+║  ┌──────────────┐                                           ║
+║  │TextProcessor │  Regex normalization + GPT-2 tokenization ║
+║  └──────┬───────┘                                           ║
+║         │                                                   ║
+║         ▼                                                   ║
+║  ┌──────────────────┐                                       ║
+║  │ConditioningCache │  Cached voice embeddings (LRU)        ║
+║  └──────┬───────────┘                                       ║
+║         │                                                   ║
+║         ▼                                                   ║
+║  ┌──────────────┐                                           ║
+║  │TokenGenerator│  Yields token chunks as they generate     ║
+║  └──────┬───────┘                                           ║
+║         │  adaptive chunking (25 tok first, 75 subsequent)  ║
+║         ▼                                                   ║
+║  ┌─────────────┐                                            ║
+║  │ChunkVocoder │  Per-chunk vocoding with source caching    ║
+║  └──────┬──────┘                                            ║
+║         │                                                   ║
+║         ▼                                                   ║
+║  ┌──────────────────┐                                       ║
+║  │AudioPostProcessor│  Fade-in, normalize, PCM int16        ║
+║  └──────┬───────────┘                                       ║
+║         │                                                   ║
+╠═══ calls into ══════════════════════════════════════════════╣
+║                                                             ║
+║  chatterbox-tts (upstream model by Resemble AI)             ║
+║                                                             ║
+║    T3 (350M)  ─  Autoregressive text-to-token transformer   ║
+║    S3Gen      ─  Flow-matching vocoder + HiFiGAN (257M)     ║
+║    VoiceEnc   ─  Speaker embedding extraction (LSTM)        ║
+║                                                             ║
+╚══════════════════════════════════╤═══════════════════════════╝
+                                   │
+                                   ▼
+                  AsyncIterator[AudioChunk]  →  24 kHz mono int16
 ```
 
 ## Dependencies
