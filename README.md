@@ -109,6 +109,24 @@ uv pip install -e ".[dev]"
 uv pip install -e ".[media]"
 ```
 
+### Hugging Face authentication
+
+Model weights (~600MB) are hosted on Hugging Face at [ResembleAI/chatterbox-turbo](https://huggingface.co/ResembleAI/chatterbox-turbo) and downloaded automatically the first time you call `.load()`. You need a (free) Hugging Face account and token:
+
+```bash
+# Install the Hugging Face CLI (included with chatterbox-tts)
+# Then log in — this saves your token locally
+huggingface-cli login
+```
+
+You can also set the `HF_TOKEN` environment variable instead:
+
+```bash
+export HF_TOKEN=hf_your_token_here
+```
+
+After the first download, weights are cached locally and no network access is needed for subsequent runs.
+
 ## Quick Start
 
 ```python
