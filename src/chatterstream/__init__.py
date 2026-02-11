@@ -10,9 +10,11 @@ Media extras (require ``pip install chatterstream-tts[media]``)::
     from chatterstream.hls_segmenter import HLSSegmenter
 """
 
-from importlib.metadata import version as _version
-
-__version__ = _version("chatterstream-tts")
+try:
+    from importlib.metadata import version as _version
+    __version__ = _version("chatterstream-tts")
+except Exception:
+    __version__ = "0.0.0+dev"
 
 from .streaming_tts import StreamingTTS
 from .types import AudioChunk, ChunkStrategy, StreamConfig, TokenChunk

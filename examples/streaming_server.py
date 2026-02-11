@@ -527,11 +527,9 @@ def main():
     _load_model()
 
     app = web.Application()
-    # Routes for both direct access and tailscale serve prefix
-    for prefix in ("", "/streaming-test"):
-        app.router.add_get(prefix + "/", handle_index)
-        app.router.add_get(prefix + "/hls/{sid}/playlist.m3u8", handle_playlist)
-        app.router.add_get(prefix + "/hls/{sid}/seg{seg}.ts", handle_segment)
+    app.router.add_get("/", handle_index)
+    app.router.add_get("/hls/{sid}/playlist.m3u8", handle_playlist)
+    app.router.add_get("/hls/{sid}/seg{seg}.ts", handle_segment)
 
     async def on_startup(app):
         global _synth_lock
