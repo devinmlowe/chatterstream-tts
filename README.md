@@ -92,9 +92,19 @@ tts = StreamingTTS()
 
 ## Installation
 
+### From PyPI
+
 ```bash
-# Clone (private repo)
-git clone git@github.com:devinmlowe/chatterstream-tts.git
+pip install chatterstream-tts
+
+# Optional: media extras (Opus encoding, HLS segmenting)
+pip install chatterstream-tts[media]
+```
+
+### From source (development)
+
+```bash
+git clone https://github.com/devinmlowe/chatterstream-tts.git
 cd chatterstream-tts
 
 # Create venv (Python 3.11 recommended)
@@ -105,7 +115,7 @@ source .venv/bin/activate  # bash/zsh
 # Install with dev dependencies
 uv pip install -e ".[dev]"
 
-# Optional: media extras (Opus encoding, HLS segmenting)
+# Optional: media extras
 uv pip install -e ".[media]"
 ```
 
