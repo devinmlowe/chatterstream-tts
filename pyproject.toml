@@ -1,6 +1,6 @@
 [project]
 name = "chatterstream-tts"
-version = "0.0.1"
+version = "0.0.2"
 description = "Streaming TTS wrapper for Chatterbox — 3-line API for chunk-by-chunk speech synthesis"
 readme = "README.md"
 requires-python = ">=3.10"
