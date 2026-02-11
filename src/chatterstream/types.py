@@ -20,7 +20,7 @@ class StreamConfig:
     """Configuration for the streaming pipeline."""
     first_chunk_tokens: int = 25
     subsequent_chunk_tokens: int = 75
-    overlap_tokens: int = 3
+    overlap_tokens: int = 0
     strategy: ChunkStrategy = ChunkStrategy.ADAPTIVE
     # T3 sampling parameters
     temperature: float = 0.8
