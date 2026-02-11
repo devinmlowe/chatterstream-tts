@@ -1,0 +1,37 @@
+[project]
+name = "chatterstream-tts"
+version = "0.1.0"
+description = "Streaming TTS wrapper for Chatterbox — 3-line API for chunk-by-chunk speech synthesis"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Devin Lowe"}
+]
+dependencies = [
+    "chatterbox-tts==0.1.6",
+    "torch>=2.6.0",
+]
+
+[project.optional-dependencies]
+media = ["av>=12.0.0"]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "numpy",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+markers = [
+    "slow: marks tests as slow (requires model weights)",
+]
+asyncio_mode = "auto"
