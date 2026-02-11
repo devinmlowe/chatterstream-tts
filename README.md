@@ -129,17 +129,23 @@ After the first download, weights are cached locally and no network access is ne
 
 ## Quick Start
 
+```bash
+# 1. Log in to Hugging Face (first time only — needed to download model weights)
+huggingface-cli login
+```
+
 ```python
+# 2. Stream speech
 from chatterstream import StreamingTTS
 
 tts = StreamingTTS()
-tts.load()  # loads model weights (~2-5s)
+tts.load()  # downloads weights on first run (~600MB), then ~2-5s from cache
 
 async for chunk in tts.synthesize("Hello world"):
     play(chunk.pcm_bytes)  # 24 kHz mono int16
 ```
 
-That's it — three lines. The pipeline handles tokenization, chunked generation, vocoding, and audio post-processing internally. Each `AudioChunk` contains raw PCM bytes (24 kHz, mono, int16) plus metadata (`is_final`, `chunk_index`, `duration_ms`).
+That's it. The pipeline handles tokenization, chunked generation, vocoding, and audio post-processing internally. Each `AudioChunk` contains raw PCM bytes (24 kHz, mono, int16) plus metadata (`is_final`, `chunk_index`, `duration_ms`).
 
 ## Advanced Usage
 
