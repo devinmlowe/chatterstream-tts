@@ -75,17 +75,50 @@ uv pip install -e ".[media]"
 
 ## Usage
 
-### Basic streaming
+### Loading the model
+
+Model weights (~600MB) must be loaded before synthesis. There are three ways to handle this, each suited to different scenarios:
+
+**Explicit load** — Call `.load()` yourself before synthesizing. This is the recommended approach for servers and long-running processes. You control exactly when the 2-5 second load happens (e.g. at startup, not on the first user request), and `is_loaded` lets you gate readiness checks.
 
 ```python
 from chatterstream import StreamingTTS
 
 tts = StreamingTTS()
-tts.load()  # loads model weights (~2-5s)
+tts.load()  # 2-5s, blocks until ready
 
 async for chunk in tts.synthesize("Hello world"):
     play(chunk.pcm_bytes)  # 24 kHz mono int16
 ```
+
+**Chained load** — `.load()` returns `self`, so you can construct and load in one line. Convenient for scripts and notebooks where you don't need the intermediate unloaded state.
+
+```python
+tts = StreamingTTS(device="mps", watermark=False).load()
+```
+
+**Auto-load (lazy)** — If you call `.synthesize()` without loading first, the model loads automatically. A `UserWarning` is emitted so you know it happened. This is fine for quick experiments but not ideal in production — the first synthesis call silently takes an extra 2-5 seconds, which can be confusing.
+
+```python
+tts = StreamingTTS()
+
+# First call triggers auto-load (emits: "Model not loaded. Call .load()
+# explicitly for faster first synthesis. Auto-loading now...")
+async for chunk in tts.synthesize("Hello world"):
+    play(chunk.pcm_bytes)
+
+# Subsequent calls are fast — model stays loaded
+async for chunk in tts.synthesize("More text"):
+    play(chunk.pcm_bytes)
+```
+
+**When to use which:**
+
+| Approach | Best for | Tradeoff |
+|---|---|---|
+| Explicit `.load()` | Servers, APIs, anything with a startup phase | You manage the load timing |
+| Chained `.load()` | Scripts, notebooks, one-off experiments | No access to unloaded state |
+| Auto-load | Quick prototyping, REPL exploration | Surprising latency on first call |
 
 ### Custom voice
 
@@ -93,6 +126,8 @@ async for chunk in tts.synthesize("Hello world"):
 async for chunk in tts.synthesize("Hello", voice="/path/to/voice.wav"):
     play(chunk.pcm_bytes)
 ```
+
+Voice files are cached by path with mtime-based invalidation — re-encoding the same file at the same path busts the cache automatically.
 
 ### Configuration
 
