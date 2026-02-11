@@ -52,7 +52,30 @@ Text Input
 
 **Python**: >=3.10 (tested on 3.11; 3.13+ may have torch compatibility issues)
 
-**Hardware**: Runs on CPU, CUDA, or Apple Silicon (MPS). FP16 is auto-enabled on MPS/CUDA.
+**Hardware**: Runs on CPU, CUDA, or Apple Silicon (MPS).
+
+### FP16 (half-precision)
+
+Neural networks store their weights and perform math using floating-point numbers. The default is FP32 (32-bit / "full precision") — each number uses 32 bits of memory. FP16 (16-bit / "half precision") uses half the memory and runs roughly 2x faster on GPUs that have dedicated half-precision hardware, which includes both NVIDIA CUDA GPUs and Apple Silicon (MPS).
+
+The tradeoff is reduced numerical range, but for TTS inference (as opposed to training) the quality difference is inaudible. Chatterstream auto-enables FP16 on MPS and CUDA because the speed and memory savings are significant with no perceptible quality loss.
+
+On CPU, FP16 is **not** enabled by default — most CPUs lack native half-precision support, so FP16 would actually be *slower* as the CPU emulates it in software. CPU inference uses FP32.
+
+**Note:** Only the T3 text-to-token model runs in FP16. The S3Gen vocoder (HiFiGAN) stays in FP32 because its audio reconstruction is more sensitive to precision, particularly on MPS where dtype mismatches cause errors.
+
+You can override the auto-detection:
+
+```python
+# Force FP16 on (even on CPU — not recommended)
+tts = StreamingTTS(fp16=True)
+
+# Force FP16 off (even on GPU — full precision, slower)
+tts = StreamingTTS(fp16=False)
+
+# Auto-detect (default) — FP16 on MPS/CUDA, FP32 on CPU
+tts = StreamingTTS()
+```
 
 ## Installation
 
