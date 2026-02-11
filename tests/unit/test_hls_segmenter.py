@@ -2,9 +2,10 @@
 
 import io
 
-import av
 import numpy as np
 import pytest
+
+av = pytest.importorskip("av", reason="PyAV required for media tests")
 
 
 def _make_segmenter(**kwargs):

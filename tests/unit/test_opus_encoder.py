@@ -5,6 +5,8 @@ import struct
 import numpy as np
 import pytest
 
+pytest.importorskip("av", reason="PyAV required for media tests")
+
 
 @pytest.fixture
 def encoder():
