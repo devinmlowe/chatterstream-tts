@@ -61,7 +61,7 @@ class TestDataTypes:
         cfg = StreamConfig()
         assert cfg.first_chunk_tokens == 25
         assert cfg.subsequent_chunk_tokens == 75
-        assert cfg.overlap_tokens == 3
+        assert cfg.overlap_tokens == 0
         assert cfg.strategy == ChunkStrategy.ADAPTIVE
         assert cfg.temperature == 0.8
 

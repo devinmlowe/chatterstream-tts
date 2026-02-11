@@ -218,6 +218,7 @@ class TestStreamingPipelineOpusEncoding:
     @pytest.mark.asyncio
     async def test_opus_encoding_when_encoder_provided(self):
         """AudioChunk.audio_bytes contains OGG data when encoder is set."""
+        pytest.importorskip("av", reason="PyAV required for media tests")
         from chatterstream.opus_encoder import OpusEncoder
         pipeline, mocks = _make_pipeline(num_chunks=2)
         mocks["post_proc"].finalize = MagicMock(return_value=b"")
