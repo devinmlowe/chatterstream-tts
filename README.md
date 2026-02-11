@@ -111,9 +111,17 @@ tts = StreamingTTS(device="mps", config=config, watermark=False)
 tts.load()
 ```
 
-### HLS streaming server
+### Media encoders
 
-See `examples/streaming_server.py` for a complete aiohttp server that streams audio via HLS (MPEG-TS/AAC segments).
+The core pipeline yields raw PCM audio. Two optional encoders (requiring `pip install chatterstream-tts[media]`) handle delivery formats:
+
+**OpusEncoder** — Encodes PCM to OGG/Opus. Best for low-latency delivery over WebSockets or direct streaming where you control both ends. Superior compression at low bitrates, near-zero codec delay. The tradeoff: browsers can't play a raw OGG/Opus stream over plain HTTP — you need JavaScript (e.g. Web Audio API) or a WebSocket to decode it client-side.
+
+**HLSSegmenter** — Encodes PCM to MPEG-TS/AAC segments with an m3u8 playlist. HLS (HTTP Live Streaming) is the standard used by every browser, phone, and smart TV — a plain `<audio>` tag pointed at the m3u8 URL just works, no JavaScript required. Audio is split into small segments (~1-2s each) served over regular HTTP. The tradeoff: segment-based delivery adds inherent latency (the player must buffer at least one segment before playback starts).
+
+These are **complementary, not alternatives**. Use Opus for real-time applications (voice agents, WebSocket APIs) where you control the client. Use HLS when you need universal browser playback with zero client-side code.
+
+The example server at `examples/streaming_server.py` uses HLS because it's the simplest way to test synthesis in any browser — just open the URL and hit play.
 
 ## Running tests
 
