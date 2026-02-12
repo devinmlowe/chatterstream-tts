@@ -263,7 +263,7 @@ class StreamingTTS:
             np.frombuffer(chunk.pcm_bytes, dtype=np.int16)
             .astype(np.float32) / 32767.0
         )
-        marked = self._watermarker.apply(pcm, sample_rate=chunk.sample_rate)
+        marked = self._watermarker.apply_watermark(pcm, sample_rate=chunk.sample_rate)
         marked_int16 = (marked * 32767).astype(np.int16)
 
         return AudioChunk(

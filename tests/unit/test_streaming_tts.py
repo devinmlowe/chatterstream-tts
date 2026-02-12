@@ -237,7 +237,7 @@ class TestWatermark:
 
         model = _make_mock_model()
         mock_wm = MagicMock()
-        mock_wm.apply.return_value = np.zeros(50, dtype=np.float32)
+        mock_wm.apply_watermark.return_value = np.zeros(50, dtype=np.float32)
 
         tts = StreamingTTS(device="cpu", watermark=True)
 
@@ -255,7 +255,7 @@ class TestWatermark:
             chunks.append(chunk)
 
         # Called once per chunk (2 chunks from mock pipeline)
-        assert mock_wm.apply.call_count == 2
+        assert mock_wm.apply_watermark.call_count == 2
 
     def test_watermark_false_skips_watermarking(self):
         """watermark=False creates no watermarker."""
