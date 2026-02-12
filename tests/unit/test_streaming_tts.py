@@ -356,3 +356,93 @@ class TestRoutingCondCache:
         cache._file_cache.clear = MagicMock()
         cache.clear()
         cache._file_cache.clear.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# MPS cache clearing (issue #2)
+# ---------------------------------------------------------------------------
+
+class TestMpsCacheClearing:
+    def test_load_clears_mps_cache_on_mps_device(self):
+        """load() calls torch.mps.empty_cache() when device is MPS."""
+        model = _make_mock_model(device="mps")
+        tts = StreamingTTS(device="mps", watermark=False)
+
+        with _patch_from_pretrained(model), \
+             patch("torch.backends.mps.is_available", return_value=True), \
+             patch("torch.mps.empty_cache") as mock_clear:
+            tts.load()
+
+        mock_clear.assert_called_once()
+
+    def test_load_skips_mps_cache_on_cpu(self):
+        """load() does not call torch.mps.empty_cache() on CPU."""
+        model = _make_mock_model(device="cpu")
+        tts = StreamingTTS(device="cpu", watermark=False)
+
+        with _patch_from_pretrained(model), \
+             patch("torch.mps.empty_cache") as mock_clear:
+            tts.load()
+
+        mock_clear.assert_not_called()
+
+    async def test_synthesize_clears_mps_cache_after_completion(self):
+        """synthesize() clears MPS cache after all chunks are yielded."""
+        model = _make_mock_model(device="mps")
+        tts = StreamingTTS(device="mps", watermark=False)
+
+        mock_pipeline = MagicMock()
+        mock_pipeline.synthesize = _mock_pipeline_synthesize
+
+        with _patch_from_pretrained(model), \
+             patch.object(tts, "_build_pipeline", return_value=mock_pipeline), \
+             patch("torch.backends.mps.is_available", return_value=True), \
+             patch("torch.mps.empty_cache") as mock_clear:
+            tts.load()
+            mock_clear.reset_mock()  # ignore the load() call
+
+            async for _ in tts.synthesize("Hello"):
+                pass
+
+        mock_clear.assert_called_once()
+
+    async def test_synthesize_clears_mps_cache_on_early_break(self):
+        """MPS cache is cleared even if consumer breaks out of iteration early."""
+        model = _make_mock_model(device="mps")
+        tts = StreamingTTS(device="mps", watermark=False)
+
+        mock_pipeline = MagicMock()
+        mock_pipeline.synthesize = _mock_pipeline_synthesize
+
+        with _patch_from_pretrained(model), \
+             patch.object(tts, "_build_pipeline", return_value=mock_pipeline), \
+             patch("torch.backends.mps.is_available", return_value=True), \
+             patch("torch.mps.empty_cache") as mock_clear:
+            tts.load()
+            mock_clear.reset_mock()
+
+            gen = tts.synthesize("Hello")
+            async for _ in gen:
+                break  # early exit
+            # Explicitly close so finally runs within the patch context
+            await gen.aclose()
+
+        mock_clear.assert_called_once()
+
+    async def test_synthesize_skips_mps_cache_on_cpu(self):
+        """synthesize() does not call torch.mps.empty_cache() on CPU."""
+        model = _make_mock_model(device="cpu")
+        tts = StreamingTTS(device="cpu", watermark=False)
+
+        mock_pipeline = MagicMock()
+        mock_pipeline.synthesize = _mock_pipeline_synthesize
+
+        with _patch_from_pretrained(model), \
+             patch.object(tts, "_build_pipeline", return_value=mock_pipeline), \
+             patch("torch.mps.empty_cache") as mock_clear:
+            tts.load()
+
+            async for _ in tts.synthesize("Hello"):
+                pass
+
+        mock_clear.assert_not_called()

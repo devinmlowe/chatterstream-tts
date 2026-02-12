@@ -190,6 +190,9 @@ class StreamingTTS:
         else:
             self._watermarker = None
 
+        # 6. Clear MPS cache after model setup to establish clean baseline
+        self._clear_mps_cache()
+
         return self
 
     # -- synthesize ---------------------------------------------------------
@@ -212,10 +215,13 @@ class StreamingTTS:
 
         voice_path = self._resolve_voice(voice)
 
-        async for chunk in self._pipeline.synthesize(text, voice_path):
-            if self._watermarker is not None:
-                chunk = self._apply_watermark(chunk)
-            yield chunk
+        try:
+            async for chunk in self._pipeline.synthesize(text, voice_path):
+                if self._watermarker is not None:
+                    chunk = self._apply_watermark(chunk)
+                yield chunk
+        finally:
+            self._clear_mps_cache()
 
     # -- internal helpers ---------------------------------------------------
 
@@ -249,6 +255,11 @@ class StreamingTTS:
             sample_rate=model.sr,
             device=model.device,
         )
+
+    def _clear_mps_cache(self) -> None:
+        """Release MPS intermediate tensors to prevent progressive AR slowdown."""
+        if self._device == "mps" and torch.backends.mps.is_available():
+            torch.mps.empty_cache()
 
     @staticmethod
     def _resolve_voice(voice: str) -> str:
